@@ -15,6 +15,7 @@ const marked = require("marked");
 const app = express(); // Web framework to handle routing requests
 const routes = require("./app/routes");
 const { port, db, cookieSecret } = require("./config/config"); // Application config properties
+// TODO: Add npm "typecheck"/"build" scripts so automated post-remediation validation can run in CI.
 /*
 // Fix for A6-Sensitive Data Exposure
 // Load keys for establishing secure HTTPS connection
@@ -27,7 +28,7 @@ const httpsOptions = {
 };
 */
 
-MongoClient.connect(db, (err, db) => {
+MongoClient.connect(db, (err, client) => {
     if (err) {
         console.log("Error: DB: connect");
         console.log(err);
@@ -127,7 +128,7 @@ MongoClient.connect(db, (err, db) => {
     app.locals.marked = marked;
 
     // Application routes
-    routes(app, db);
+    routes(app, client.db());
 
     // Template system setup
     swig.setDefaults({
