@@ -1,0 +1,16 @@
+repos:
+- repo: local
+  hooks:
+  - id: cx-secret-detection
+    name: Cx Secret Detection
+    entry: cx
+    description: Run Cx CLI secret detection
+    stages:
+    - pre-commit
+    args:
+    - hooks
+    - pre-commit
+    - secrets-scan
+    language: system
+    pass_filenames: false
+    minimum_pre_commit_version: 3.2.0
