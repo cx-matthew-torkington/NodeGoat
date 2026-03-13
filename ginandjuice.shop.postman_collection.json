@@ -1,0 +1,320 @@
+{
+  "info": {
+    "_postman_id": "1f6e6593-c7dd-4a29-b0dd-a80d537f1a52",
+    "name": "ginandjuice.shop - Baseline Collection",
+    "description": "Baseline collection for ginandjuice.shop built from publicly discoverable routes and forms. Includes core browse flows and key form actions. Update csrf and credentials variables before POST requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://ginandjuice.shop"
+    },
+    {
+      "key": "csrf",
+      "value": ""
+    },
+    {
+      "key": "username",
+      "value": "carlos"
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": "1"
+    },
+    {
+      "key": "storeId",
+      "value": "1"
+    },
+    {
+      "key": "searchTerm",
+      "value": "gin"
+    },
+    {
+      "key": "email",
+      "value": "test@example.com"
+    }
+  ],
+  "item": [
+    {
+      "name": "Core Pages",
+      "item": [
+        {
+          "name": "GET Home",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/"
+          }
+        },
+        {
+          "name": "GET About",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/about"
+          }
+        },
+        {
+          "name": "GET Catalog",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/catalog"
+          }
+        },
+        {
+          "name": "GET Blog",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/blog"
+          }
+        },
+        {
+          "name": "GET My Account",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/my-account"
+          }
+        },
+        {
+          "name": "GET Cart",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/catalog/cart"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "GET Catalog Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/catalog?searchTerm={{searchTerm}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog"
+              ],
+              "query": [
+                {
+                  "key": "searchTerm",
+                  "value": "{{searchTerm}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Product Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/catalog/product?productId={{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog",
+                "product"
+              ],
+              "query": [
+                {
+                  "key": "productId",
+                  "value": "{{productId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Product Stock Check",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "productId",
+                  "value": "{{productId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "storeId",
+                  "value": "{{storeId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "csrf",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/catalog/product/stock"
+          }
+        },
+        {
+          "name": "POST Add To Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "productId",
+                  "value": "{{productId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "quantity",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "csrf",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/catalog/cart"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Blog",
+      "item": [
+        {
+          "name": "GET Blog Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/blog/?searchTerm={{searchTerm}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "blog",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "searchTerm",
+                  "value": "{{searchTerm}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Blog Post",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/blog/post?postId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "blog",
+                "post"
+              ],
+              "query": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Account And Marketing",
+      "item": [
+        {
+          "name": "POST Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrf",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/login"
+          }
+        },
+        {
+          "name": "POST Subscribe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrf",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "{{email}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/catalog/subscribe"
+          }
+        }
+      ]
+    }
+  ]
+}

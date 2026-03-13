@@ -1,0 +1,67 @@
+env:
+  contexts:
+    - name: "ginjuice-auth"
+      urls:
+        - "https://ginandjuice.shop"
+      includePaths:
+        - "https://ginandjuice.shop.*"
+      sessionManagement:
+        method: "cookie"
+      authentication:
+        method: "form"
+        parameters:
+          loginPageUrl: "https://ginandjuice.shop/my-account"
+          loginRequestUrl: "https://ginandjuice.shop/login"
+          loginRequestBody: "csrf={%csrf%}&username={%username%}&password={%password%}"
+        verification:
+          method: "response"
+          loggedInRegex: "(?i)(my account|logout|log out)"
+          loggedOutRegex: "(?i)(login|log in)"
+      users:
+        - name: "carlos-user"
+          credentials:
+            username: "carlos"
+            password: "hunter2"
+      # Match common anti-CSRF parameter name used by this app.
+      antiCsrf:
+        tokens:
+          - "csrf"
+
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  - type: "spider"
+    parameters:
+      context: "ginjuice-auth"
+      user: "carlos-user"
+      url: "https://ginandjuice.shop/"
+      maxDuration: 5
+      maxDepth: 5
+      acceptCookies: true
+
+  - type: "activeScan"
+    parameters:
+      context: "ginjuice-auth"
+      user: "carlos-user"
+      policy: "Default Policy"
+      maxRuleDurationInMins: 2
+      maxScanDurationInMins: 15
+
+  - type: "report"
+    parameters:
+      template: "traditional-html"
+      reportDir: "/zap/wrk"
+      reportFile: "zap-ginjuice-auth-report.html"
+    risks:
+      - "high"
+      - "medium"
+      - "low"
+      - "informational"
+    confidences:
+      - "high"
+      - "medium"
+      - "low"
+      - "falsepositive"
