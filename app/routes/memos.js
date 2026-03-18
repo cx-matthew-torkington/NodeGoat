@@ -2,6 +2,7 @@ const MemosDAO = require("../data/memos-dao").MemosDAO;
 const {
     environmentalScripts
 } = require("../../config/config");
+const esapi = require("node-esapi");
 
 function MemosHandler(db) {
     "use strict";
@@ -24,9 +25,11 @@ function MemosHandler(db) {
 
         memosDAO.getAllMemos((err, docs) => {
             if (err) return next(err);
+            // Sanitize userId to prevent XSS attacks
+            const sanitizedUserId = userId ? esapi.encoder().encodeForHTML(String(userId)) : '';
             return res.render("memos", {
                 memosList: docs,
-                userId: userId,
+                userId: sanitizedUserId,
                 environmentalScripts
             });
         });
