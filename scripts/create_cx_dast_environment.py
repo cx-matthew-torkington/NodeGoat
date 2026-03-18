@@ -11,6 +11,7 @@ It reads defaults from ~/.checkmarx/checkmarxcli.yaml when not explicitly provid
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import os
 import re
@@ -25,6 +26,15 @@ from typing import Any, Dict, List, Optional
 
 DEFAULT_CONFIG = Path.home() / ".checkmarx" / "checkmarxcli.yaml"
 DEFAULT_CLIENT_ID = "ast-app"
+LOG_FILE = Path("cx_dast_environment.log")
+
+
+def _log(message: str) -> None:
+    """Append a timestamped message to the log file."""
+    ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    entry = f"[{ts}] {message}\n"
+    with LOG_FILE.open("a", encoding="utf-8") as fh:
+        fh.write(entry)
 
 
 def parse_kv_yaml(path: Path) -> Dict[str, str]:
@@ -71,10 +81,44 @@ def http_request(
     headers: Dict[str, str],
     body: Optional[bytes] = None,
     insecure: bool = False,
+    verbose: bool = False,
 ) -> tuple[int, str]:
     req = urllib.request.Request(url=url, data=body, method=method)
     for k, v in headers.items():
         req.add_header(k, v)
+
+    if verbose:
+        # Print a curl-equivalent command so the exact request is visible
+        safe_headers = {
+            k: ("<token>" if k.lower() == "authorization" else v)
+            for k, v in headers.items()
+        }
+        header_flags = " ".join(f"-H '{k}: {v}'" for k, v in safe_headers.items())
+        insecure_flag = " -k" if insecure else ""
+        if body:
+            body_str = body.decode("utf-8", errors="replace")
+            # Pretty-print JSON bodies
+            try:
+                body_str = json.dumps(json.loads(body_str), indent=2)
+            except (json.JSONDecodeError, ValueError):
+                pass
+            print(f"\n--- REQUEST ---\ncurl -X {method}{insecure_flag} '{url}' \\\n  {header_flags} \\\n  -d '{body_str}'\n", file=sys.stderr)
+        else:
+            print(f"\n--- REQUEST ---\ncurl -X {method}{insecure_flag} '{url}' \\\n  {header_flags}\n", file=sys.stderr)
+
+    # Always log every request to the log file
+    safe_headers_log = {
+        k: ("<token>" if k.lower() == "authorization" else v)
+        for k, v in headers.items()
+    }
+    body_log = ""
+    if body:
+        body_decoded = body.decode("utf-8", errors="replace")
+        try:
+            body_log = json.dumps(json.loads(body_decoded))
+        except (json.JSONDecodeError, ValueError):
+            body_log = body_decoded[:500]
+    _log(f"REQUEST  {method} {url} headers={json.dumps(safe_headers_log)} body={body_log}")
 
     try:
         context = None
@@ -82,9 +126,11 @@ def http_request(
             context = ssl._create_unverified_context()
         with urllib.request.urlopen(req, timeout=30, context=context) as resp:
             text = resp.read().decode("utf-8", errors="replace")
+            _log(f"RESPONSE {method} {url} status={resp.getcode()} body={text[:300]}")
             return resp.getcode(), text
     except urllib.error.HTTPError as exc:
         text = exc.read().decode("utf-8", errors="replace")
+        _log(f"RESPONSE {method} {url} status={exc.code} body={text[:300]}")
         return exc.code, text
 
 
@@ -195,6 +241,7 @@ def create_or_update_environment(
     existing_env_id: Optional[str],
     create_only: bool,
     insecure: bool,
+    verbose: bool = False,
 ) -> Dict[str, Any]:
     url = f"{base_uri.rstrip('/')}/api/dast/scans/environment"
     headers = {
@@ -207,7 +254,7 @@ def create_or_update_environment(
         payload = dict(payload)
         payload["environmentId"] = existing_env_id
         code, body = http_request(
-            "PUT", url, headers, json.dumps(payload).encode("utf-8"), insecure=insecure
+            "PUT", url, headers, json.dumps(payload).encode("utf-8"), insecure=insecure, verbose=verbose
         )
         if code not in (200, 201):
             raise RuntimeError(f"Update environment failed ({code}): {body}")
@@ -218,7 +265,7 @@ def create_or_update_environment(
         }
 
     code, body = http_request(
-        "POST", url, headers, json.dumps(payload).encode("utf-8"), insecure=insecure
+        "POST", url, headers, json.dumps(payload).encode("utf-8"), insecure=insecure, verbose=verbose
     )
     if code not in (200, 201):
         raise RuntimeError(f"Create environment failed ({code}): {body}")
@@ -402,6 +449,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-auth", dest="has_auth", action="store_false", help="Disable auth flag")
     parser.add_argument("--create-only", action="store_true", help="Fail if environment already exists")
     parser.add_argument("--run-scan", action="store_true", help="Trigger a DAST scan immediately after the environment is created or updated")
+    parser.add_argument("--verbose", action="store_true", help="Print the curl-equivalent HTTP request to stderr before sending")
     parser.add_argument("--user-name", default="carlos", help="Auth user name for scanConfig fallback")
     parser.add_argument("--user-password", default="hunter2", help="Auth password for scanConfig fallback")
 
@@ -456,6 +504,8 @@ def main() -> int:
     config_name = args.config_name or config_path.name
     config_content = config_path.read_text(encoding="utf-8")
 
+    _log(f"START environment-name={args.environment_name!r} target-url={args.target_url!r} scan-type={args.scan_type!r} config-file={args.config_file!r} run-scan={args.run_scan}")
+
     try:
         token = get_access_token(base_auth_uri, tenant, args.client_id, api_key, args.insecure)
         environments = list_environments(base_uri, token, args.insecure)
@@ -474,6 +524,7 @@ def main() -> int:
             existing_env_id=existing.get("environmentId") if existing else None,
             create_only=args.create_only,
             insecure=args.insecure,
+            verbose=args.verbose,
         )
 
         # Verify the environment exists and has the expected basic settings.
@@ -522,9 +573,11 @@ def main() -> int:
             )
             output["scan"] = scan_result
 
+        _log(f"DONE action={result['action']!r} environmentId={result['environmentId']!r} authVerified={auth_verified} run-scan={args.run_scan}")
         print(json.dumps(output, indent=2))
         return 0
     except Exception as exc:
+        _log(f"ERROR {exc}")
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
