@@ -27,10 +27,11 @@ function ContributionsHandler(db) {
 
     this.handleContributionsUpdate = (req, res, next) => {
 
-        // Secure input parsing using parseInt to prevent code injection
-        const preTax = parseInt(req.body.preTax);
-        const afterTax = parseInt(req.body.afterTax);
-        const roth = parseInt(req.body.roth);
+        // Fix for Code Injection - use parseInt() instead of eval()
+        // This safely parses user input as integers without executing code
+        const preTax = parseInt(req.body.preTax, 10);
+        const afterTax = parseInt(req.body.afterTax, 10);
+        const roth = parseInt(req.body.roth, 10);
         const {
             userId
         } = req.session;
