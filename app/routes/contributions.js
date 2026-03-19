@@ -27,11 +27,10 @@ function ContributionsHandler(db) {
 
     this.handleContributionsUpdate = (req, res, next) => {
 
-        // Secure parsing of numeric inputs using parseFloat with validation
-        // This prevents code injection by avoiding eval() and ensures inputs are numbers
-        const preTax = parseFloat(req.body.preTax);
-        const afterTax = parseFloat(req.body.afterTax);
-        const roth = parseFloat(req.body.roth);
+        // Secure parsing using parseInt() instead of eval() to prevent code injection
+        const preTax = parseInt(req.body.preTax, 10);
+        const afterTax = parseInt(req.body.afterTax, 10);
+        const roth = parseInt(req.body.roth, 10);
         const {
             userId
         } = req.session;
