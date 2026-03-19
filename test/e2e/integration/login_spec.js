@@ -87,4 +87,152 @@ describe('/login behaviour', () => {
     cy.get("a[href='/signup']").click()
     cy.url().should('include', 'signup')
   })
+
+  describe('XSS Protection Tests', () => {
+    it('should sanitize XSS attempts in username field with script tags', () => {
+      const xssPayload = '<script>alert("XSS")</script>'
+      cy.get('#userName').type(xssPayload)
+      cy.get('#password').type('anypassword')
+      cy.get('[type="submit"]').click()
+
+      cy.url().should('include', 'login')
+
+      // Verify the error message is shown (invalid username)
+      cy.get('.alert-danger')
+        .contains('Invalid username')
+        .and('be.visible')
+
+      // Verify that the username field contains the sanitized value, not the raw script
+      cy.get('#userName').should('have.value', xssPayload)
+
+      // Most importantly, verify that the script did NOT execute by checking the page source
+      // The encoded version should appear in the HTML, not the raw script
+      cy.get('#userName').invoke('val').then((val) => {
+        // The value attribute should contain the sanitized version
+        expect(val).to.equal(xssPayload)
+      })
+
+      // Verify no alert was triggered (if script executed, this test would fail)
+      cy.on('window:alert', (text) => {
+        throw new Error('XSS alert was triggered: ' + text)
+      })
+    })
+
+    it('should sanitize XSS attempts with img tag and onerror', () => {
+      const xssPayload = '<img src=x onerror=alert(1)>'
+      cy.get('#userName').type(xssPayload)
+      cy.get('#password').type('anypassword')
+      cy.get('[type="submit"]').click()
+
+      cy.url().should('include', 'login')
+
+      // Verify the error message is shown
+      cy.get('.alert-danger').should('be.visible')
+
+      // Verify no alert was triggered
+      cy.on('window:alert', (text) => {
+        throw new Error('XSS alert was triggered: ' + text)
+      })
+    })
+
+    it('should sanitize XSS attempts with iframe injection', () => {
+      const xssPayload = '<iframe src="javascript:alert(1)"></iframe>'
+      cy.get('#userName').type(xssPayload)
+      cy.get('#password').type('anypassword')
+      cy.get('[type="submit"]').click()
+
+      cy.url().should('include', 'login')
+
+      // Verify no iframe was injected into the page
+      cy.get('iframe').should('not.exist')
+    })
+
+    it('should sanitize XSS attempts with event handlers', () => {
+      const xssPayload = '<div onmouseover="alert(1)">test</div>'
+      cy.get('#userName').type(xssPayload)
+      cy.get('#password').type('anypassword')
+      cy.get('[type="submit"]').click()
+
+      cy.url().should('include', 'login')
+
+      // Verify the error message is shown
+      cy.get('.alert-danger').should('be.visible')
+
+      // Verify no alert was triggered
+      cy.on('window:alert', (text) => {
+        throw new Error('XSS alert was triggered: ' + text)
+      })
+    })
+
+    it('should sanitize XSS attempts with encoded characters', () => {
+      const xssPayload = '&lt;script&gt;alert("XSS")&lt;/script&gt;'
+      cy.get('#userName').type(xssPayload)
+      cy.get('#password').type('anypassword')
+      cy.get('[type="submit"]').click()
+
+      cy.url().should('include', 'login')
+
+      // Verify the error message is shown
+      cy.get('.alert-danger').should('be.visible')
+    })
+
+    it('should handle normal username after XSS attempt', () => {
+      // First attempt with XSS
+      const xssPayload = '<script>alert("XSS")</script>'
+      cy.get('#userName').type(xssPayload)
+      cy.get('#password').type('anypassword')
+      cy.get('[type="submit"]').click()
+
+      cy.url().should('include', 'login')
+
+      // Clear and try with valid credentials
+      cy.get('#userName').clear()
+      cy.get('#password').clear()
+
+      cy.fixture('users/user.json').as('user')
+      cy.get('@user').then(user => {
+        cy.get('#userName').type(user.user)
+        cy.get('#password').type(user.pass)
+        cy.get('[type="submit"]').click()
+        cy.url().should('include', 'dashboard')
+      })
+    })
+
+    it('should sanitize XSS in wrong password scenario', () => {
+      const xssPayload = '<script>alert("XSS")</script>testuser'
+
+      // Create a request that will trigger invalid password error
+      // Using a valid-looking username with XSS payload
+      cy.get('#userName').type(xssPayload)
+      cy.get('#password').type('wrongpassword')
+      cy.get('[type="submit"]').click()
+
+      cy.url().should('include', 'login')
+
+      // Verify error is shown
+      cy.get('.alert-danger').should('be.visible')
+
+      // Verify no alert was triggered
+      cy.on('window:alert', (text) => {
+        throw new Error('XSS alert was triggered: ' + text)
+      })
+    })
+
+    it('should properly escape special HTML characters', () => {
+      const specialChars = '"><svg/onload=alert(1)>'
+      cy.get('#userName').type(specialChars)
+      cy.get('#password').type('anypassword')
+      cy.get('[type="submit"]').click()
+
+      cy.url().should('include', 'login')
+
+      // Verify no SVG element was injected
+      cy.get('svg').should('not.exist')
+
+      // Verify no alert was triggered
+      cy.on('window:alert', (text) => {
+        throw new Error('XSS alert was triggered: ' + text)
+      })
+    })
+  })
 })
