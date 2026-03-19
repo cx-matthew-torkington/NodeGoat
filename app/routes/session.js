@@ -4,6 +4,7 @@ const ESAPI = require('node-esapi');
 const {
     environmentalScripts
 } = require("../../config/config");
+const ESAPI = require('node-esapi');
 
 /* The SessionHandler must be constructed with a connected db */
 function SessionHandler(db) {
@@ -86,9 +87,8 @@ function SessionHandler(db) {
                         environmentalScripts
                     });
                 } else if (err.invalidPassword) {
-                    // Fix for Reflected XSS - Sanitize userName before rendering to prevent XSS attacks
+                    // Fix for A3 - XSS: Encode userName to prevent reflected XSS
                     const sanitizedUserName = ESAPI.encoder().encodeForHTML(userName);
-
                     return res.render("login", {
                         userName: sanitizedUserName,
                         password: "",
