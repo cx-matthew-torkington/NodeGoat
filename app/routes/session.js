@@ -1,5 +1,6 @@
 const UserDAO = require("../data/user-dao").UserDAO;
 const AllocationsDAO = require("../data/allocations-dao").AllocationsDAO;
+const ESAPI = require('node-esapi');
 const {
     environmentalScripts
 } = require("../../config/config");
@@ -74,8 +75,11 @@ function SessionHandler(db) {
                     // or if you know that this is a CRLF vulnerability you can target this specifically as follows:
                     // console.log('Error: attempt to login with invalid user: %s', userName.replace(/(\r\n|\r|\n)/g, '_'));
 
+                    // Fix for Reflected XSS - Sanitize userName before rendering to prevent XSS attacks
+                    const sanitizedUserName = ESAPI.encoder().encodeForHTML(userName);
+
                     return res.render("login", {
-                        userName: userName,
+                        userName: sanitizedUserName,
                         password: "",
                         loginError: invalidUserNameErrorMessage,
                         //Fix for A2-2 Broken Auth - Uses identical error for both username, password error
