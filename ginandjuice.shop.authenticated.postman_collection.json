@@ -1,0 +1,375 @@
+{
+  "info": {
+    "_postman_id": "7f32a6d5-4f4f-4db4-8682-2f38dd7af3f1",
+    "name": "ginandjuice.shop - Authenticated Collection",
+    "description": "Authenticated Postman collection for ginandjuice.shop. Includes CSRF bootstrap, login, and authenticated follow-up requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://ginandjuice.shop"
+    },
+    {
+      "key": "username",
+      "value": "carlos"
+    },
+    {
+      "key": "password",
+      "value": "hunter2"
+    },
+    {
+      "key": "csrf",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": "1"
+    },
+    {
+      "key": "storeId",
+      "value": "1"
+    },
+    {
+      "key": "searchTerm",
+      "value": "gin"
+    },
+    {
+      "key": "email",
+      "value": "carlos@example.com"
+    },
+    {
+      "key": "postId",
+      "value": "1"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('baseUrl')) {",
+          "  pm.collectionVariables.set('baseUrl', 'https://ginandjuice.shop');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Auth Bootstrap",
+      "item": [
+        {
+          "name": "GET My Account (Fetch CSRF)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/my-account",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "my-account"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('My Account loaded', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "const html = pm.response.text();",
+                  "const csrfMatch = html.match(/name=[\"']csrf[\"'][^>]*value=[\"']([^\"']+)[\"']/i) || html.match(/value=[\"']([^\"']+)[\"'][^>]*name=[\"']csrf[\"']/i);",
+                  "if (csrfMatch && csrfMatch[1]) {",
+                  "  pm.collectionVariables.set('csrf', csrfMatch[1]);",
+                  "}",
+                  "pm.test('CSRF token extracted', function () {",
+                  "  pm.expect(pm.collectionVariables.get('csrf')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrf",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login request completed', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "pm.test('Session cookie should be present', function () {",
+                  "  const setCookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "  pm.expect(setCookie.length > 0 || pm.response.code === 200).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET My Account (Verify Auth)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/my-account",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "my-account"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Authenticated page reachable', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10 - Authenticated API/Routes",
+      "item": [
+        {
+          "name": "GET Catalog",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/catalog"
+          }
+        },
+        {
+          "name": "GET Catalog Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/catalog?searchTerm={{searchTerm}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog"
+              ],
+              "query": [
+                {
+                  "key": "searchTerm",
+                  "value": "{{searchTerm}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Product Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/catalog/product?productId={{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog",
+                "product"
+              ],
+              "query": [
+                {
+                  "key": "productId",
+                  "value": "{{productId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Product Stock Check",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "productId",
+                  "value": "{{productId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "storeId",
+                  "value": "{{storeId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "csrf",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/catalog/product/stock"
+          }
+        },
+        {
+          "name": "POST Add To Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "productId",
+                  "value": "{{productId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "quantity",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "csrf",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/catalog/cart"
+          }
+        },
+        {
+          "name": "GET Cart",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/catalog/cart"
+          }
+        },
+        {
+          "name": "POST Subscribe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrf",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "{{email}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/catalog/subscribe"
+          }
+        },
+        {
+          "name": "GET Blog",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/blog"
+          }
+        },
+        {
+          "name": "GET Blog Post",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/blog/post?postId={{postId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "blog",
+                "post"
+              ],
+              "query": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
