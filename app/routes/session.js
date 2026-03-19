@@ -3,6 +3,7 @@ const AllocationsDAO = require("../data/allocations-dao").AllocationsDAO;
 const {
     environmentalScripts
 } = require("../../config/config");
+const ESAPI = require('node-esapi');
 
 /* The SessionHandler must be constructed with a connected db */
 function SessionHandler(db) {
@@ -82,8 +83,10 @@ function SessionHandler(db) {
                         environmentalScripts
                     });
                 } else if (err.invalidPassword) {
+                    // Fix for A3 - XSS: Encode userName to prevent reflected XSS
+                    const sanitizedUserName = ESAPI.encoder().encodeForHTML(userName);
                     return res.render("login", {
-                        userName: userName,
+                        userName: sanitizedUserName,
                         password: "",
                         loginError: invalidPasswordErrorMessage,
                         //Fix for A2-2 Broken Auth - Uses identical error for both username, password error
