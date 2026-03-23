@@ -2,6 +2,7 @@ const ContributionsDAO = require("../data/contributions-dao").ContributionsDAO;
 const {
     environmentalScripts
 } = require("../../config/config");
+const esapi = require("node-esapi");
 
 /* The ContributionsHandler must be constructed with a connected db */
 function ContributionsHandler(db) {
@@ -49,7 +50,7 @@ function ContributionsHandler(db) {
         if (preTax + afterTax + roth > 30) {
             return res.render("contributions", {
                 updateError: "Contribution percentages cannot exceed 30 %",
-                userId,
+                userId: esapi.encoder().encodeForHTML(String(userId)),
                 environmentalScripts
             });
         }
