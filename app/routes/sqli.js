@@ -1,6 +1,7 @@
 "use strict";
 
 const SqliDAO = require("../data/sqli-dao");
+const ESAPI = require("node-esapi");
 
 function SqliHandler(db) {
     const sqliDAO = new SqliDAO();
@@ -25,7 +26,7 @@ function SqliHandler(db) {
                 return res.render("sqli", {
                     environmentalScripts,
                     results: null,
-                    searchName,
+                    searchName: ESAPI.encoder().encodeForHTML(searchName),
                     error: "Query error: " + err.message
                 });
             }
@@ -33,7 +34,7 @@ function SqliHandler(db) {
             return res.render("sqli", {
                 environmentalScripts,
                 results: rows,
-                searchName,
+                searchName: ESAPI.encoder().encodeForHTML(searchName),
                 error: null
             });
         });
