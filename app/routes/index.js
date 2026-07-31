@@ -6,6 +6,7 @@ const AllocationsHandler = require("./allocations");
 const MemosHandler = require("./memos");
 const ResearchHandler = require("./research");
 const SqliHandler = require("./sqli");
+const StatusHandler = require("./status");
 const {
     environmentalScripts
 } = require("../../config/config");
@@ -23,6 +24,7 @@ const index = (app, db) => {
     const memosHandler = new MemosHandler(db);
     const researchHandler = new ResearchHandler(db);
     const sqliHandler = new SqliHandler(db);
+    const statusHandler = new StatusHandler(db);
 
     // Middleware to check if a user is logged in
     const isLoggedIn = sessionHandler.isLoggedInMiddleware;
@@ -97,6 +99,9 @@ const index = (app, db) => {
 
     // Staff Directory — SQL Injection demo page (OWASP A1)
     app.get("/staff-search", isLoggedIn, sqliHandler.displaySearch);
+
+    // Status page — reports service/database health, no auth required
+    app.get("/status", statusHandler.displayStatus);
 
     // Error handling middleware
     app.use(ErrorHandler);
