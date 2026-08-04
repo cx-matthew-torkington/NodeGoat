@@ -24,6 +24,9 @@
     "swig": "^1.4.2",
     "underscore": "^1.8.3"
   },
+  "overrides": {
+    "extend": ">=3.0.2"
+  },
   "comments": {
     "//": "a9 insecure components"
   },
