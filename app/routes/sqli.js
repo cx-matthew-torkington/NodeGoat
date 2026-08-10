@@ -1,7 +1,6 @@
 "use strict";
 
 const SqliDAO = require("../data/sqli-dao");
-const esapi = require("node-esapi");
 
 function SqliHandler(db) {
     const sqliDAO = new SqliDAO();
@@ -26,7 +25,8 @@ function SqliHandler(db) {
                 return res.render("sqli", {
                     environmentalScripts,
                     results: null,
-                    searchName: esapi.encoder().encodeForHTML(searchName),
+                    // searchName is HTML-encoded by swig autoescape (autoescape: true in server.js)
+                    searchName: searchName,
                     error: "Query error: " + err.message
                 });
             }
@@ -34,7 +34,8 @@ function SqliHandler(db) {
             return res.render("sqli", {
                 environmentalScripts,
                 results: rows,
-                searchName: esapi.encoder().encodeForHTML(searchName),
+                // searchName is HTML-encoded by swig autoescape (autoescape: true in server.js)
+                searchName: searchName,
                 error: null
             });
         });
